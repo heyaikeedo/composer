@@ -1,0 +1,64 @@
+{
+    "name": "heyaikeedo/composer",
+    "description": "Aikeedo Composer plugin to register custom installer for Aikeedo plugins/themese etc.",
+    "keywords": [
+        "composer",
+        "plugin",
+        "installer",
+        "aikeedo",
+        "heyaikeedo"
+    ],
+    "type": "composer-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Aikeedo Team",
+            "email": "hey@aikeedo.com"
+        }
+    ],
+    "extra": {
+        "class": "Aikeedo\\Composer\\Plugin"
+    },
+    "require": {
+        "php": "^8.2",
+        "composer-plugin-api": "^2.0"
+    },
+    "require-dev": {
+        "composer/composer": "^2.3",
+        "phpunit/phpunit": "^9.5",
+        "phpstan/phpstan": "^1.8",
+        "squizlabs/php_codesniffer": "^3.7",
+        "phpmd/phpmd": "^2.13",
+        "phpcompatibility/php-compatibility": "^9.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Aikeedo\\Composer\\": "src/"
+        },
+        "exclude-from-classmap": [
+            "/tests/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Aikeedo\\Composer\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "phpstan": "phpstan analyse",
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf -v",
+        "phpmd": "phpmd src ansi phpmd.xml --suffixes=php",
+        "unit-test": "phpunit",
+        "code-coverage": "phpunit --coverage-html coverage",
+        "analyse": [
+            "@phpstan",
+            "@phpcs",
+            "@phpmd",
+            "@unit-test"
+        ],
+        "fix": [
+            "@phpcbf"
+        ]
+    }
+}

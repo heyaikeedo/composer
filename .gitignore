@@ -1,0 +1,23 @@
+# Composer lock file.
+# Library's lock file doesn't have any effect 
+# on other projects that depend on it
+composer.lock
+
+# VS CODE Workspace file
+*.code-workspace
+
+# IntelliJ IDE files
+**/.idea
+
+# OS X Desktop Services Store files
+**/.DS_Store
+
+# Vendors
+/vendor/
+
+# Var
+/var/*
+!/var/.gitkeep
+
+# Code coverage output files
+coverage
