@@ -24,8 +24,6 @@ class Installer extends LibraryInstaller implements InstallerInterface
     /** @inheritDoc */
     public function getInstallPath(PackageInterface $package)
     {
-        $dir = $package->getType() == 'aikeedo-theme' ? 'themes' : 'plugins';
-
-        return 'public/content/' . $dir . '/' . $package->getPrettyName();
+        return 'public/content/plugins/' . $package->getPrettyName();
     }
 }
