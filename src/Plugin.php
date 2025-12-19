@@ -167,6 +167,18 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
     /**
      * Copy files from package to target directory
+     *
+     * Target path resolution follows "Model A" where target is ALWAYS the final destination path:
+     *
+     * | Target Format | Result                                      | Example                           |
+     * |---------------|---------------------------------------------|-----------------------------------|
+     * | "file.js"     | Package dir + target                        | public/e/{vendor}/{pkg}/file.js   |
+     * | "/file.js"    | Webroot + target                            | public/file.js                    |
+     * | "."           | Package dir + source basename               | public/e/{vendor}/{pkg}/src       |
+     * | "/." or "/"   | Webroot + source basename                   | public/src                        |
+     * | null          | Package dir + source basename               | public/e/{vendor}/{pkg}/src       |
+     * | "dir/*"       | Glob: contents copied to target directory   | public/dist/...                   |
+     * | (string)      | Legacy: package dir + full source path      | public/e/.../path/to/file         |
      */
     private function copyPackageFiles(PackageInterface $package): void
     {
@@ -185,34 +197,47 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         // Prepare mappings to store for later removal
         $mappings = [];
 
-        // Default public directory for this package
+        // Default public directory for this package: {webroot}/e/{vendor}/{package}
         $defaultPublicDir = $this->webroot . '/e/' . $packageName;
 
         foreach ($publicFiles as $entry) {
             try {
                 // Normalize entry to source/target pair
                 if (is_string($entry)) {
-                    // Legacy format: simple string path
+                    // Legacy format: simple string path preserves full path structure
+                    // Example: "widget/dist/file.js" → public/e/{vendor}/{pkg}/widget/dist/file.js
                     $source = $entry;
                     $targetPath = $defaultPublicDir . '/' . $entry;
                 } elseif (is_array($entry) && isset($entry['source'])) {
-                    // New format: {source, target}
+                    // New format: {source, target} - target is the final destination path
                     $source = $entry['source'];
                     $target = $entry['target'] ?? null;
 
-                    // Determine target path
+                    // Determine target path based on target format (Model A: target IS the final path)
                     if ($target === null) {
-                        // No target specified, use default package public dir
-                        // Remove glob patterns from basename calculation
+                        // No target: package dir + source basename
+                        // Example: {"source": "dist"} → public/e/{vendor}/{pkg}/dist
                         $sourceBase = $this->getBasePathFromPattern($source);
                         $targetPath = $defaultPublicDir . '/' . basename($sourceBase);
-                    } elseif ($target === '.') {
-                        // Copy to webroot directly with source basename
+                    } elseif ($target === '/.' || $target === '/') {
+                        // Target "/." or "/": webroot + source basename (shorthand)
+                        // Example: {"source": "dist", "target": "/."} → public/dist
+                        // Example: {"source": "dist", "target": "/"} → public/dist
                         $sourceBase = $this->getBasePathFromPattern($source);
                         $targetPath = $this->webroot . '/' . basename($sourceBase);
-                    } else {
-                        // Target is relative to webroot
+                    } elseif ($target === '.') {
+                        // Target ".": package dir + source basename (same as null)
+                        // Example: {"source": "dist", "target": "."} → public/e/{vendor}/{pkg}/dist
+                        $sourceBase = $this->getBasePathFromPattern($source);
+                        $targetPath = $defaultPublicDir . '/' . basename($sourceBase);
+                    } elseif (strpos($target, '/') === 0) {
+                        // Target starts with "/": relative to webroot (target IS the final path)
+                        // Example: {"source": "dist", "target": "/assets"} → public/assets
                         $targetPath = $this->webroot . '/' . ltrim($target, '/');
+                    } else {
+                        // Target without leading "/": relative to package dir (target IS the final path)
+                        // Example: {"source": "dist", "target": "assets"} → public/e/{vendor}/{pkg}/assets
+                        $targetPath = $defaultPublicDir . '/' . ltrim($target, '/');
                     }
                 } else {
                     $this->io->writeError(sprintf(
